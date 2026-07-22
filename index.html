@@ -389,6 +389,15 @@ html,body{
         <audio id="bgmAudio" loop preload="auto">
           <source src="Kevin_MacLeod_Night_of_Chaos.mp3" type="audio/mpeg">
         </audio>
+        <audio id="humOpenAudio" loop preload="auto">
+          <source src="15kHz_CRT_hum_opening_scene.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="humCloseAudio" loop preload="auto">
+          <source src="The_background_hum_closing_scene.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="typingAudio" loop preload="auto">
+          <source src="Keyboard_typing_opening_scene.mp3" type="audio/mpeg">
+        </audio>
       </div>
     </div>
 
@@ -432,53 +441,65 @@ html,body{
 </div>
 
 <script>
-/* ============ AUDIO (synthesized, on by default) ============ */
-let actx = null, humOsc = null, humGain = null, noiseNode = null, audioOn = true;
-function initAudio(){
+/* ============ AUDIO (real files, on by default) ============ */
+let audioOn = true;
+let actx = null, noiseNode = null; // kept only for the tiny glitch-burst pop
+const bgm = ()=>document.getElementById('bgmAudio');
+const humOpen = ()=>document.getElementById('humOpenAudio');
+const humClose = ()=>document.getElementById('humCloseAudio');
+const typingSfx = ()=>document.getElementById('typingAudio');
+
+function initNoiseBurst(){
   if(actx) return;
   actx = new (window.AudioContext||window.webkitAudioContext)();
-  humOsc = actx.createOscillator();
-  humOsc.type = 'sine';
-  humOsc.frequency.value = 64;
-  humGain = actx.createGain();
-  humGain.gain.value = 0.0;
-  humOsc.connect(humGain).connect(actx.destination);
-  humOsc.start();
-
-  const bufSize = 2*actx.sampleRate;
+  const bufSize = actx.sampleRate; // 1s
   const buf = actx.createBuffer(1,bufSize,actx.sampleRate);
   const data = buf.getChannelData(0);
   for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1)*0.5;
   noiseNode = actx.createBufferSource();
   noiseNode.buffer = buf; noiseNode.loop = true;
   const noiseFilter = actx.createBiquadFilter();
-  noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 3200; noiseFilter.Q.value=0.6;
+  noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 3200; noiseFilter.Q.value = 0.6;
   const noiseGain = actx.createGain();
   noiseGain.gain.value = 0.0;
   noiseNode.connect(noiseFilter).connect(noiseGain).connect(actx.destination);
   noiseNode.start();
-  humGain._target = 0.0;
   window.__noiseGain = noiseGain;
 }
+
+/* Which ambient hum should be playing right now, based on the current step. */
+function isClosingStep(){
+  const step = CONTENT[idx];
+  return !!step && (step.id === 'act3' || step.kind === 'end');
+}
+function refreshAmbientHum(){
+  const wantClose = isClosingStep();
+  const play = wantClose ? humClose() : humOpen();
+  const pause = wantClose ? humOpen() : humClose();
+  pause.pause();
+  if(audioOn){
+    play.volume = 0.18;
+    play.play().catch(()=>{});
+  } else {
+    play.pause();
+  }
+}
+
 function setAudio(on){
   audioOn = on;
   const btn = document.getElementById('audio-toggle');
   btn.textContent = on ? '🔊' : '🔇';
   btn.setAttribute('aria-label', on ? 'Mute audio' : 'Unmute audio');
-  const bgm = document.getElementById('bgmAudio');
   if(on){
-    initAudio();
-    if(actx.state === 'suspended') actx.resume();
-    humGain.gain.linearRampToValueAtTime(0.02, actx.currentTime+1.2);
-    window.__noiseGain.gain.linearRampToValueAtTime(0.012, actx.currentTime+1.2);
-    bgm.volume = 0.35;
-    bgm.play().catch(()=>{ /* blocked until user gesture — attemptAutoAudio's unlock handles it */ });
+    bgm().volume = 0.32;
+    bgm().play().catch(()=>{ /* blocked until user gesture — attemptAutoAudio's unlock handles it */ });
+    refreshAmbientHum();
+    if(typing) typingSfx().play().catch(()=>{});
   } else {
-    bgm.pause();
-    if(actx){
-      humGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
-      window.__noiseGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
-    }
+    bgm().pause();
+    humOpen().pause();
+    humClose().pause();
+    typingSfx().pause();
   }
 }
 /* Browsers block audio until a real user gesture. We try to start
@@ -488,9 +509,11 @@ function setAudio(on){
 function attemptAutoAudio(){
   setAudio(true);
   const unlock = ()=>{
-    if(actx && actx.state === 'suspended') actx.resume();
-    const bgm = document.getElementById('bgmAudio');
-    if(audioOn && bgm.paused) bgm.play().catch(()=>{});
+    if(audioOn){
+      bgm().play().catch(()=>{});
+      refreshAmbientHum();
+      if(typing) typingSfx().play().catch(()=>{});
+    }
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);
   };
@@ -498,22 +521,26 @@ function attemptAutoAudio(){
   window.addEventListener('keydown', unlock, { once:true });
 }
 document.getElementById('audio-toggle').addEventListener('click', ()=> setAudio(!audioOn));
-function keyClick(){
-  if(!audioOn || !actx) return;
-  const o = actx.createOscillator();
-  const g = actx.createGain();
-  o.type='square'; o.frequency.value = 800+Math.random()*400;
-  g.gain.value = 0.015;
-  o.connect(g).connect(actx.destination);
-  o.start();
-  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+0.03);
-  o.stop(actx.currentTime+0.04);
+
+function startTypingSfx(){
+  if(!audioOn) return;
+  const t = typingSfx();
+  t.currentTime = 0;
+  t.volume = 0.28;
+  t.play().catch(()=>{});
+}
+function stopTypingSfx(){
+  const t = typingSfx();
+  t.pause();
+  t.currentTime = 0;
 }
 function staticPop(){
-  if(!audioOn || !actx) return;
+  if(!audioOn) return;
+  initNoiseBurst();
+  if(actx.state === 'suspended') actx.resume();
   window.__noiseGain.gain.cancelScheduledValues(actx.currentTime);
   window.__noiseGain.gain.setValueAtTime(0.09, actx.currentTime);
-  window.__noiseGain.gain.exponentialRampToValueAtTime(0.012, actx.currentTime+0.5);
+  window.__noiseGain.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+0.5);
 }
 
 /* ============ ART ASSETS ============ */
@@ -631,6 +658,7 @@ function typeText(str, cb){
   typing = true;
   els.typed.innerHTML = '';
   els.cont.classList.remove('show');
+  startTypingSfx();
   let i = 0;
   const speed = 14;
   clearInterval(typeTimer);
@@ -638,12 +666,12 @@ function typeText(str, cb){
     if(i>=str.length){
       clearInterval(typeTimer);
       typing = false;
+      stopTypingSfx();
       els.cont.classList.add('show');
       if(cb) cb();
       return;
     }
     els.typed.textContent += str[i];
-    if(str[i] !== ' ' && Math.random()<0.35) keyClick();
     i++;
   }, speed);
 }
@@ -651,6 +679,7 @@ function typeText(str, cb){
 function finishTypeInstant(str){
   clearInterval(typeTimer);
   typing = false;
+  stopTypingSfx();
   els.typed.textContent = str;
   els.cont.classList.add('show');
 }
@@ -749,6 +778,7 @@ function renderStep(){
 
 function render(){
   const step = CONTENT[idx];
+  refreshAmbientHum();
   if(!step){ renderEnd(); return; }
   if(step.kind==='title'){ renderTitle(); return; }
   if(step.kind==='end'){ renderEnd(); return; }
