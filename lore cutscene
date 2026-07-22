@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OVERWRITE_v??.??</title>
+<style>
+@font-face {
+  font-family: 'sys';
+}
+:root{
+  --p0:#020604;
+  --p1:#07120c;
+  --p2:#0e2015;
+  --green:#3dff7a;
+  --green-dim:#1c8a45;
+  --green-glow:#8dffb8;
+  --crimson:#ff2a3c;
+  --crimson-dim:#7a1018;
+  --amber:#ffb020;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-disp: 'VT323', 'Courier New', monospace;
+}
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  background:var(--p0);
+  font-family:var(--font-mono);
+  color:var(--green);
+  overflow:hidden;
+  cursor:default;
+}
+#app{
+  position:relative;
+  width:100%; height:100vh;
+  background:
+    radial-gradient(ellipse at center, rgba(20,60,35,0.35) 0%, rgba(0,0,0,0.95) 78%),
+    var(--p0);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ---------- CRT GLOBAL OVERLAYS ---------- */
+.crt-scanlines{
+  position:absolute; inset:0; pointer-events:none; z-index:50;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.18) 2px,
+    rgba(0,0,0,0.18) 3px
+  );
+  mix-blend-mode:multiply;
+}
+.crt-vignette{
+  position:absolute; inset:0; pointer-events:none; z-index:51;
+  box-shadow: inset 0 0 18vw 4vw rgba(0,0,0,0.85);
+}
+.crt-flicker{
+  position:absolute; inset:0; pointer-events:none; z-index:52;
+  background:rgba(120,255,170,0.02);
+  animation:flicker 6.2s infinite;
+}
+@keyframes flicker{
+  0%,19%,21%,50%,52%,79%,81%,100%{opacity:1;}
+  20%{opacity:.85;}
+  51%{opacity:.9;}
+  80%{opacity:.82;}
+}
+.crt-roll{
+  position:absolute; left:0; right:0; height:26px; z-index:53;
+  background:linear-gradient(to bottom, rgba(180,255,210,0.05), rgba(180,255,210,0) 70%);
+  pointer-events:none;
+  animation:roll 11s linear infinite;
+  opacity:.5;
+}
+@keyframes roll{
+  0%{ top:-10%; }
+  100%{ top:110%; }
+}
+.noise{
+  position:absolute; inset:0; z-index:49; pointer-events:none;
+  opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  animation:noiseshift .3s steps(2) infinite;
+}
+@keyframes noiseshift{
+  0%{ transform:translate(0,0); }
+  50%{ transform:translate(-2%,1%); }
+  100%{ transform:translate(1%,-2%); }
+}
+
+.glitchburst{
+  position:absolute; inset:0; z-index:60; pointer-events:none;
+  opacity:0;
+}
+.glitchburst.active{
+  animation:burst .35s steps(2,end);
+}
+@keyframes burst{
+  0%{ opacity:0; }
+  20%{ opacity:1; background:rgba(255,42,60,0.10); transform:translateX(-6px); }
+  40%{ opacity:1; background:rgba(120,255,170,0.08); transform:translateX(5px); }
+  60%{ opacity:1; background:rgba(255,42,60,0.06); transform:translateX(-3px); }
+  100%{ opacity:0; transform:translateX(0); }
+}
+
+.flash{
+  position:absolute; inset:0; z-index:70; pointer-events:none;
+  background:#eafff0; opacity:0;
+}
+.flash.go{ animation:flashgo .5s ease-out; }
+@keyframes flashgo{
+  0%{opacity:0;}
+  8%{opacity:.9;}
+  100%{opacity:0;}
+}
+
+/* ---------- CONSOLE FRAME ---------- */
+#console{
+  position:relative;
+  width:min(96vw, 1180px);
+  height:min(92vh, 720px);
+  background:linear-gradient(180deg,#050b07,#020402);
+  border:1px solid var(--green-dim);
+  border-radius:6px;
+  box-shadow:
+    0 0 0 1px rgba(61,255,122,0.08),
+    0 0 40px rgba(61,255,122,0.10),
+    0 0 120px rgba(61,255,122,0.06),
+    inset 0 0 60px rgba(0,0,0,0.9);
+  display:grid;
+  grid-template-rows:auto 1fr;
+  overflow:hidden;
+}
+
+/* top bar */
+#topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 18px;
+  border-bottom:1px solid rgba(61,255,122,0.25);
+  background:linear-gradient(180deg, rgba(61,255,122,0.05), rgba(0,0,0,0));
+  font-size:12px;
+  letter-spacing:1px;
+}
+#topbar .title{
+  font-family:var(--font-disp);
+  font-size:22px;
+  letter-spacing:3px;
+  color:var(--green-glow);
+  text-shadow:0 0 8px rgba(61,255,122,0.9), 0 0 18px rgba(61,255,122,0.4);
+}
+#topbar .sub{ color:var(--green-dim); font-size:10px; margin-top:-2px;}
+.topbar-right{ display:flex; align-items:center; gap:16px; }
+.corrupt-meter{
+  display:flex; align-items:center; gap:8px;
+  font-size:10px; color:var(--green-dim);
+}
+.meter-track{
+  width:110px; height:6px; background:rgba(61,255,122,0.08);
+  border:1px solid var(--green-dim); position:relative; overflow:hidden;
+}
+.meter-fill{
+  height:100%; width:0%; background:linear-gradient(90deg,var(--green-dim),var(--crimson));
+  transition:width .8s ease;
+  box-shadow:0 0 8px var(--crimson);
+}
+#audio-toggle{
+  background:none; border:1px solid var(--green-dim); color:var(--green-dim);
+  font-family:var(--font-mono); font-size:10px; padding:4px 8px; cursor:pointer;
+  letter-spacing:1px;
+}
+#audio-toggle:hover{ color:var(--green); border-color:var(--green); }
+
+/* body split */
+#body{
+  display:grid;
+  grid-template-columns:190px 1fr;
+  min-height:0;
+}
+
+/* sidebar */
+#sidebar{
+  border-right:1px solid rgba(61,255,122,0.2);
+  padding:14px 12px;
+  font-size:10px;
+  overflow:hidden;
+  background:rgba(0,0,0,0.2);
+}
+#sidebar .hdr{
+  color:var(--green-dim); letter-spacing:2px; margin-bottom:10px; font-size:9px;
+}
+.sector{
+  display:flex; align-items:flex-start; gap:6px;
+  padding:7px 4px; margin-bottom:2px;
+  color:var(--green-dim);
+  border-left:2px solid transparent;
+  line-height:1.3;
+  opacity:.55;
+}
+.sector .mark{ width:10px; flex:none; }
+.sector.done{ color:var(--green); opacity:.85; }
+.sector.done .mark::before{ content:"✓"; }
+.sector.current{
+  color:var(--green-glow); opacity:1;
+  border-left:2px solid var(--crimson);
+  background:rgba(61,255,122,0.06);
+  text-shadow:0 0 6px rgba(61,255,122,0.6);
+}
+.sector.current .mark::before{ content:"▶"; color:var(--crimson); }
+.sector.locked .mark::before{ content:"·"; }
+
+#sidebar .footer-note{
+  margin-top:18px; font-size:9px; color:var(--green-dim); opacity:.6; line-height:1.6;
+}
+
+/* main stage */
+#stage{
+  position:relative;
+  display:grid;
+  grid-template-rows:1fr auto;
+  min-height:0;
+  padding:16px 20px 14px;
+}
+
+/* viewport for art asset */
+#viewport{
+  position:relative;
+  border:1px solid rgba(61,255,122,0.25);
+  background:#010302;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  min-height:0;
+}
+#viewport svg{ width:100%; height:100%; display:block; }
+.asset-img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  filter: contrast(1.08) brightness(0.92) saturate(1.05);
+}
+.img-missing{
+  width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; color:var(--crimson); font-size:12px; letter-spacing:1px; text-align:center; padding:20px;
+}
+.img-missing .big{ font-size:15px; color:var(--green-dim); }
+.asset-caption{
+  position:absolute; left:10px; bottom:8px; z-index:5;
+  font-size:10px; letter-spacing:1px; color:var(--green-dim);
+  background:rgba(0,0,0,0.4); padding:2px 6px;
+}
+.asset-tag{
+  position:absolute; right:10px; top:8px; z-index:5;
+  font-size:9px; color:var(--crimson); letter-spacing:1px;
+  background:rgba(0,0,0,0.4); padding:2px 6px;
+}
+.viewport-frame-corner{
+  position:absolute; width:14px; height:14px; border-color:var(--green-dim); z-index:6;
+}
+.vfc-tl{ top:6px; left:6px; border-top:1px solid; border-left:1px solid; }
+.vfc-tr{ top:6px; right:6px; border-top:1px solid; border-right:1px solid; }
+.vfc-bl{ bottom:6px; left:6px; border-bottom:1px solid; border-left:1px solid; }
+.vfc-br{ bottom:6px; right:6px; border-bottom:1px solid; border-right:1px solid; }
+
+/* title-screen specific in viewport */
+.titlescreen{
+  width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:14px; padding:20px;
+}
+.big-title{
+  font-family:var(--font-disp);
+  font-size:min(9vw, 84px);
+  letter-spacing:6px;
+  color:var(--green-glow);
+  text-shadow:0 0 10px rgba(61,255,122,.9), 0 0 40px rgba(61,255,122,.5), 0 0 2px #fff;
+  position:relative;
+}
+.big-title .glitchlayer{
+  position:absolute; inset:0; color:var(--crimson); opacity:.6; clip-path:inset(0 0 60% 0);
+  animation:titleglitch 3.4s infinite;
+}
+@keyframes titleglitch{
+  0%,88%,100%{ transform:translate(0,0); opacity:0; }
+  89%{ transform:translate(-4px,2px); opacity:.7; clip-path:inset(10% 0 60% 0); }
+  91%{ transform:translate(3px,-2px); opacity:.5; clip-path:inset(40% 0 20% 0); }
+  93%{ transform:translate(-2px,0); opacity:0; }
+}
+.title-sub{ font-size:13px; color:var(--green-dim); letter-spacing:3px; }
+.title-warn{ font-size:11px; color:var(--crimson-dim); letter-spacing:2px; margin-top:6px; }
+.blink{ animation:blk 1s step-end infinite; }
+@keyframes blk{ 50%{opacity:0;} }
+
+/* text panel */
+#textpanel{
+  margin-top:12px;
+  border:1px solid rgba(61,255,122,0.25);
+  background:linear-gradient(180deg, rgba(0,20,10,0.4), rgba(0,0,0,0.5));
+  padding:14px 16px 12px;
+  min-height:118px;
+  position:relative;
+}
+#tagline{
+  font-size:11px; color:var(--crimson); letter-spacing:1px; margin-bottom:8px;
+  text-shadow:0 0 6px rgba(255,42,60,0.5);
+}
+#bodytext{
+  font-size:15px; line-height:1.55; color:var(--green);
+  white-space:pre-wrap;
+  min-height:64px;
+}
+#bodytext .quote{ color:var(--green-glow); font-style:italic; }
+#cursor{ display:inline-block; width:8px; background:var(--green); animation:blk .8s step-end infinite; }
+
+#controls{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:12px;
+}
+.hint{ font-size:10px; color:var(--green-dim); letter-spacing:1px; opacity:.7;}
+#continue-btn{
+  font-family:var(--font-mono);
+  font-size:13px; letter-spacing:2px;
+  background:rgba(61,255,122,0.06);
+  border:1px solid var(--green);
+  color:var(--green-glow);
+  padding:10px 22px;
+  cursor:pointer;
+  opacity:0; pointer-events:none;
+  transition:opacity .35s ease, background .2s, transform .1s;
+  text-shadow:0 0 6px rgba(61,255,122,.7);
+}
+#continue-btn.show{ opacity:1; pointer-events:auto; }
+#continue-btn:hover{ background:rgba(61,255,122,0.16); }
+#continue-btn:active{ transform:scale(.97); }
+#continue-btn::before{ content:"> "; }
+#continue-btn::after{ content:"_"; animation:blk .8s step-end infinite; }
+
+.startbtn{
+  font-family:var(--font-mono); font-size:14px; letter-spacing:3px;
+  background:rgba(61,255,122,0.06); border:1px solid var(--green); color:var(--green-glow);
+  padding:12px 30px; cursor:pointer; margin-top:10px;
+}
+.startbtn:hover{ background:rgba(61,255,122,0.18); }
+
+/* end screen */
+.endscreen{ text-align:center; }
+.endscreen .term{ font-size:16px; color:var(--green-glow); letter-spacing:2px; }
+
+@media (max-width:720px){
+  #body{ grid-template-columns:1fr; }
+  #sidebar{ display:none; }
+  .big-title{ font-size:11vw; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="console">
+    <div id="topbar">
+      <div>
+        <div class="title">OVERWRITE_v??.??</div>
+        <div class="sub">SYSTEM_OVERRIDE // CORRUPTION_LOG_0x04</div>
+      </div>
+      <div class="topbar-right">
+        <div class="corrupt-meter">
+          <span>SIGNAL&nbsp;CORRUPTION</span>
+          <div class="meter-track"><div class="meter-fill" id="meterFill"></div></div>
+          <span id="meterPct">00%</span>
+        </div>
+        <button id="audio-toggle">AUDIO: OFF</button>
+      </div>
+    </div>
+
+    <div id="body">
+      <div id="sidebar">
+        <div class="hdr">MEMORY&nbsp;SECTORS</div>
+        <div id="sectorList"></div>
+        <div class="footer-note">UNAUTHORIZED ACCESS<br>DETECTED. LOGGING<br>CONTINUES REGARDLESS.</div>
+      </div>
+
+      <div id="stage">
+        <div id="viewport">
+          <div class="viewport-frame-corner vfc-tl"></div>
+          <div class="viewport-frame-corner vfc-tr"></div>
+          <div class="viewport-frame-corner vfc-bl"></div>
+          <div class="viewport-frame-corner vfc-br"></div>
+          <div class="asset-tag" id="assetTag" style="display:none;"></div>
+          <div class="asset-caption" id="assetCaption" style="display:none;"></div>
+          <div id="viewportInner" style="width:100%;height:100%;"></div>
+        </div>
+
+        <div id="textpanel">
+          <div id="tagline"></div>
+          <div id="bodytext"><span id="typed"></span><span id="cursor"></span></div>
+          <div id="controls">
+            <div class="hint" id="hintText">CLICK TO SKIP TYPING</div>
+            <button id="continue-btn">CONTINUE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="noise"></div>
+  <div class="crt-roll"></div>
+  <div class="crt-scanlines"></div>
+  <div class="crt-flicker"></div>
+  <div class="crt-vignette"></div>
+  <div class="glitchburst" id="glitchburst"></div>
+  <div class="flash" id="flash"></div>
+</div>
+
+<script>
+/* ============ AUDIO (synthesized, off by default) ============ */
+let actx = null, humOsc = null, humGain = null, noiseNode = null, audioOn = false;
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  humOsc = actx.createOscillator();
+  humOsc.type = 'sine';
+  humOsc.frequency.value = 64;
+  humGain = actx.createGain();
+  humGain.gain.value = 0.0;
+  humOsc.connect(humGain).connect(actx.destination);
+  humOsc.start();
+
+  const bufSize = 2*actx.sampleRate;
+  const buf = actx.createBuffer(1,bufSize,actx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1)*0.5;
+  noiseNode = actx.createBufferSource();
+  noiseNode.buffer = buf; noiseNode.loop = true;
+  const noiseFilter = actx.createBiquadFilter();
+  noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 3200; noiseFilter.Q.value=0.6;
+  const noiseGain = actx.createGain();
+  noiseGain.gain.value = 0.0;
+  noiseNode.connect(noiseFilter).connect(noiseGain).connect(actx.destination);
+  noiseNode.start();
+  humGain._target = 0.0;
+  window.__noiseGain = noiseGain;
+}
+function setAudio(on){
+  audioOn = on;
+  const btn = document.getElementById('audio-toggle');
+  btn.textContent = on ? 'AUDIO: ON' : 'AUDIO: OFF';
+  if(on){
+    initAudio();
+    if(actx.state === 'suspended') actx.resume();
+    humGain.gain.linearRampToValueAtTime(0.02, actx.currentTime+1.2);
+    window.__noiseGain.gain.linearRampToValueAtTime(0.012, actx.currentTime+1.2);
+  } else if(actx){
+    humGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
+    window.__noiseGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
+  }
+}
+function keyClick(){
+  if(!audioOn || !actx) return;
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type='square'; o.frequency.value = 800+Math.random()*400;
+  g.gain.value = 0.015;
+  o.connect(g).connect(actx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+0.03);
+  o.stop(actx.currentTime+0.04);
+}
+function staticPop(){
+  if(!audioOn || !actx) return;
+  window.__noiseGain.gain.cancelScheduledValues(actx.currentTime);
+  window.__noiseGain.gain.setValueAtTime(0.09, actx.currentTime);
+  window.__noiseGain.gain.exponentialRampToValueAtTime(0.012, actx.currentTime+0.5);
+}
+document.getElementById('audio-toggle').addEventListener('click', ()=> setAudio(!audioOn));
+
+/* ============ ART ASSETS ============ */
+/* Plain <img> tags — drop your own files in the same folder on GitHub
+   (or edit the src paths below) and they'll slot in automatically.
+   If a file is missing, a CRT-style "signal lost" placeholder shows instead. */
+function assetImg(n, alt){
+  return `<img id="artAsset${n}" src="art_asset_0${n}.jpg" alt="${alt}" class="asset-img"
+    onerror="this.onerror=null; this.outerHTML='<div class=&quot;img-missing&quot;><div class=&quot;big&quot;>ART_ASSET_0${n}</div><div>SOURCE FILE NOT FOUND</div><div>art_asset_0${n}.jpg</div></div>';" />`;
+}
+
+/* ============ CONTENT ============ */
+const CONTENT = [
+  { kind:'title' },
+  { id:'act1', kind:'act', tag:'[BOOT_SEQUENCE]: FORCED_MEMORY_INJECTION.',
+    text:`Your room shrinks around you as the dark monitor screen begins to pulse with a faint, toxic green luminescence. The cursor doesn't blink normally anymore — it stutters, shivering like a needle caught on a scratched vinyl record.
+
+You were looking for answers about a missing frequency, a forgotten student, or a ghost in the code. Instead, you've pulled on a thread that wasn't meant to be touched. Lines of raw, uncompiled terminal data scroll down your screen too fast to read, tearing through your system's baseline security.
+
+The terminal locks. The ambient light in your room seems to dim as the command line forces open a buried memory sector.
+
+You aren't just reading a log — you are accessing a piece of Chase Miller before his mind was overwritten by Him.` },
+
+  { id:'s1', kind:'scene', tag:'[SYSTEM_RECOVERY]: MEMORY_SECTOR_01 RESTORED.',
+    quote:`"It was supposed to be a simple frequency tuner. A little custom code, a guitar pedal, and a dream of dropping out of comp-sci to actually build something real."`,
+    asset:1, label:'ART_ASSET_01 // 2018_FRAGMENT', tagRight:'SECTOR_01' },
+
+  { id:'s2', kind:'scene', tag:'[CRITICAL_WARNING]: FREQUENCY_BLEED_DETECTED.',
+    quote:`"I was scanning local radio bands looking for dead air to isolate the pedal's noise gate. But the forest wasn't broadcasting dead air. It was broadcasting... Him."`,
+    asset:2, label:'ART_ASSET_02 // SIGNAL_BLEED', tagRight:'SECTOR_02' },
+
+  { id:'s3', kind:'scene', tag:'[KERNEL_PANIC]: IDENTITY_SECTOR_OVERWRITTEN.',
+    quote:`"At first, I fought it. Tried to patch the breach, tried to rewrite my own mind like a broken script. But you can't debug an anomaly that controls the compiler."`,
+    asset:3, label:'ART_ASSET_03 // MALICIOUS_COMPLIANCE', tagRight:'SECTOR_03' },
+
+  { id:'s4', kind:'scene', tag:'[PROXY_PROTOCOL_ACTIVE]: CONNECTION_LOCKED.',
+    quote:`"So I stopped fighting. The static in my head makes far more sense than the real world ever did anyway. And now? You're looking at my feed... which means He is looking at yours."`,
+    asset:4, label:'ART_ASSET_04 // DIRECT_CONFRONTATION', tagRight:'SECTOR_04', bigGlitch:true },
+
+  { id:'act3', kind:'act', tag:'[SIGNAL_TERMINATED]: PROXY_RELAY_OFFLINE.',
+    text:`The smug smirk on Chase's pixelated face dissolves into a cascading waterfall of raw, unreadable hex code. One by one, the wireframe pine trees, the glitched forest geometry, and the flickering crimson glare collapse inward, swallowing themselves into a single, blinding point of light at the center of your monitor.
+
+Then... total silence.
+
+The transmission has disconnected, but the static doesn't leave your room. It lingers in the quiet air around you, a microscopic buzzing vibrating right at the edge of your hearing.
+
+Chase didn't just force you to watch his past — he used the connection to calibrate his frequency scanner to your device. He knows where you are on the grid now.
+
+The monitor goes pitch black, save for a single green terminal prompt blinking quietly in the bottom corner of your screen, waiting for your next move.` },
+
+  { kind:'end' }
+];
+
+const SECTOR_LABELS = {
+  act1:'ACT_01 // BOOT',
+  s1:'SECTOR_01 // 2018',
+  s2:'SECTOR_02 // BLEED',
+  s3:'SECTOR_03 // COMPLIANCE',
+  s4:'SECTOR_04 // CONFRONT',
+  act3:'ACT_03 // CLOSING'
+};
+const SECTOR_IDS = Object.keys(SECTOR_LABELS);
+
+let idx = 0;
+let typing = false;
+let typeTimer = null;
+let completedSectors = new Set();
+
+const els = {
+  tag: document.getElementById('tagline'),
+  typed: document.getElementById('typed'),
+  cont: document.getElementById('continue-btn'),
+  vpInner: document.getElementById('viewportInner'),
+  assetTag: document.getElementById('assetTag'),
+  assetCaption: document.getElementById('assetCaption'),
+  sectorList: document.getElementById('sectorList'),
+  meterFill: document.getElementById('meterFill'),
+  meterPct: document.getElementById('meterPct'),
+  glitch: document.getElementById('glitchburst'),
+  flash: document.getElementById('flash'),
+  hint: document.getElementById('hintText'),
+};
+
+function renderSidebar(currentId){
+  els.sectorList.innerHTML = SECTOR_IDS.map(id=>{
+    let cls = 'sector';
+    if(completedSectors.has(id)) cls += ' done';
+    if(id===currentId) cls += ' current';
+    if(!completedSectors.has(id) && id!==currentId) cls += ' locked';
+    return `<div class="${cls}"><span class="mark"></span><span>${SECTOR_LABELS[id]}</span></div>`;
+  }).join('');
+}
+
+function updateMeter(){
+  const total = SECTOR_IDS.length;
+  const done = completedSectors.size;
+  const pct = Math.round((done/total)*100);
+  els.meterFill.style.width = pct+'%';
+  els.meterPct.textContent = String(pct).padStart(2,'0')+'%';
+}
+
+function triggerGlitch(intensity){
+  els.glitch.classList.remove('active');
+  void els.glitch.offsetWidth;
+  els.glitch.classList.add('active');
+  staticPop();
+  if(intensity==='hard'){
+    els.flash.classList.remove('go');
+    void els.flash.offsetWidth;
+    els.flash.classList.add('go');
+  }
+}
+
+function typeText(str, cb){
+  typing = true;
+  els.typed.innerHTML = '';
+  els.cont.classList.remove('show');
+  let i = 0;
+  const speed = 14;
+  clearInterval(typeTimer);
+  typeTimer = setInterval(()=>{
+    if(i>=str.length){
+      clearInterval(typeTimer);
+      typing = false;
+      els.cont.classList.add('show');
+      if(cb) cb();
+      return;
+    }
+    els.typed.textContent += str[i];
+    if(str[i] !== ' ' && Math.random()<0.35) keyClick();
+    i++;
+  }, speed);
+}
+
+function finishTypeInstant(str){
+  clearInterval(typeTimer);
+  typing = false;
+  els.typed.textContent = str;
+  els.cont.classList.add('show');
+}
+
+function renderTitle(){
+  els.tag.textContent = '';
+  els.assetTag.style.display='none';
+  els.assetCaption.style.display='none';
+  els.hint.textContent = 'AWAITING INPUT';
+  renderSidebar(null);
+  els.vpInner.innerHTML = `
+    <div class="titlescreen">
+      <div class="big-title">OVERWRITE_v??.??<span class="glitchlayer">OVERWRITE_v??.??</span></div>
+      <div class="title-sub">SYSTEM_OVERRIDE&nbsp;//&nbsp;CORRUPTION_LOG_0x04</div>
+      <div class="title-warn">⚠ UNAUTHORIZED MEMORY ACCESS IN PROGRESS <span class="blink">_</span></div>
+    </div>`;
+  els.typed.textContent = '';
+  document.getElementById('bodytext').style.display='none';
+  document.getElementById('cursor').style.display='none';
+  els.cont.textContent = 'BEGIN_TRANSMISSION';
+  els.cont.classList.add('show');
+  els.cont.onclick = ()=>{ idx++; render(); };
+}
+
+function renderEnd(){
+  document.getElementById('bodytext').style.display='block';
+  document.getElementById('cursor').style.display='inline-block';
+  els.assetTag.style.display='none';
+  els.assetCaption.style.display='none';
+  els.tag.textContent = '[SIGNAL_TERMINATED // PROXY_RELAY_OFFLINE]';
+  renderSidebar('act3');
+  els.vpInner.innerHTML = `
+    <div class="titlescreen">
+      <div style="font-family:var(--font-disp);font-size:40px;color:var(--green-glow);letter-spacing:3px;text-shadow:0 0 10px rgba(61,255,122,.8);">
+        &gt; <span class="blink">_</span>
+      </div>
+      <div class="title-sub">TRANSMISSION ENDED</div>
+    </div>`;
+  els.typed.textContent = 'End of recovered memory sector. The prompt blinks. It is waiting for you.';
+  els.cont.textContent = 'REPLAY_LOG';
+  els.cont.classList.add('show');
+  els.hint.textContent = '';
+  els.cont.onclick = ()=>{ idx=0; completedSectors.clear(); render(); };
+  triggerGlitch('hard');
+}
+
+function renderStep(){
+  const step = CONTENT[idx];
+  document.getElementById('bodytext').style.display='block';
+  document.getElementById('cursor').style.display='inline-block';
+  els.hint.textContent = 'CLICK TO SKIP TYPING';
+  els.cont.textContent = 'CONTINUE';
+
+  if(step.kind==='act'){
+    els.assetTag.style.display='none';
+    els.assetCaption.style.display='none';
+    els.tag.textContent = step.tag;
+    renderSidebar(step.id);
+    els.vpInner.innerHTML = `
+      <div class="titlescreen">
+        <div style="font-family:var(--font-disp);font-size:30px;color:var(--green-dim);letter-spacing:4px;">${step.tag}</div>
+        <div class="title-sub">NARRATOR&nbsp;POV</div>
+      </div>`;
+    triggerGlitch(idx>0?'soft':'hard');
+    const full = step.text;
+    els.cont.onclick = null;
+    typeText(full, ()=>{
+      completedSectors.add(step.id);
+      updateMeter();
+      renderSidebar(step.id);
+      els.cont.onclick = ()=>{ idx++; render(); };
+    });
+    els.cont.onclick = ()=>{ finishTypeInstant(full); completedSectors.add(step.id); updateMeter(); renderSidebar(step.id); els.cont.onclick=()=>{idx++;render();}; };
+  }
+
+  if(step.kind==='scene'){
+    els.tag.textContent = step.tag;
+    els.assetTag.style.display='block';
+    els.assetTag.textContent = step.tagRight;
+    els.assetCaption.style.display='block';
+    els.assetCaption.textContent = step.label;
+    renderSidebar(step.id);
+    els.vpInner.innerHTML = assetImg(step.asset, step.label);
+    triggerGlitch(step.bigGlitch ? 'hard' : 'soft');
+    const full = `"${step.quote.replace(/^"|"$/g,'')}"`;
+    const skip = ()=>{ finishTypeInstant(full); completedSectors.add(step.id); updateMeter(); renderSidebar(step.id); els.cont.onclick=()=>{idx++;render();}; };
+    typeText(full, ()=>{
+      completedSectors.add(step.id);
+      updateMeter();
+      renderSidebar(step.id);
+      els.cont.onclick = ()=>{ idx++; render(); };
+    });
+    els.cont.onclick = skip;
+  }
+}
+
+function render(){
+  const step = CONTENT[idx];
+  if(!step){ renderEnd(); return; }
+  if(step.kind==='title'){ renderTitle(); return; }
+  if(step.kind==='end'){ renderEnd(); return; }
+  renderStep();
+}
+
+/* click anywhere on text panel to skip typing */
+document.getElementById('textpanel').addEventListener('click', (e)=>{
+  if(e.target.id==='continue-btn') return;
+  if(typing) els.cont.onclick && els.cont.onclick();
+});
+
+updateMeter();
+render();
+</script>
+</body>
+</html>
