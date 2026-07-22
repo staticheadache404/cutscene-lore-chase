@@ -491,10 +491,7 @@ function setAudio(on){
   btn.textContent = on ? '🔊' : '🔇';
   btn.setAttribute('aria-label', on ? 'Mute audio' : 'Unmute audio');
   if(on){
-    bgm().volume = 0.32;
-    bgm().play().catch(()=>{ /* blocked until user gesture — attemptAutoAudio's unlock handles it */ });
-    refreshAmbientHum();
-    if(typing) typingSfx().play().catch(()=>{});
+    ensureAudioUnlocked();
   } else {
     bgm().pause();
     humOpen().pause();
@@ -502,18 +499,29 @@ function setAudio(on){
     typingSfx().pause();
   }
 }
-/* Browsers block audio until a real user gesture. We try to start
-   immediately; if that's blocked, the very first click/tap/keypress
-   anywhere on the page silently unlocks it — audio still turns on
-   "automatically" from the player's perspective. */
+
+/* The one thing every browser's autoplay policy reliably allows is a
+   play() call made synchronously inside a real click/tap/key handler.
+   This is called directly from the buttons people actually interact
+   with (see the els.cont / #textpanel listeners below), which is far
+   more reliable than trying to autoplay on load alone. Safe to call
+   repeatedly — it's a no-op once nothing is paused. */
+function ensureAudioUnlocked(){
+  if(!audioOn) return;
+  bgm().volume = 0.32;
+  bgm().play().catch(()=>{});
+  refreshAmbientHum();
+  if(typing) typingSfx().play().catch(()=>{});
+}
+
+/* We also try to start immediately on load, and keep a page-wide
+   fallback listener in case the button-bound unlock above is ever
+   bypassed (e.g. keyboard-only navigation before focus reaches a
+   button). */
 function attemptAutoAudio(){
   setAudio(true);
   const unlock = ()=>{
-    if(audioOn){
-      bgm().play().catch(()=>{});
-      refreshAmbientHum();
-      if(typing) typingSfx().play().catch(()=>{});
-    }
+    ensureAudioUnlocked();
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);
   };
@@ -556,7 +564,7 @@ function assetImg(n, alt){
 const CONTENT = [
   { kind:'title' },
   { id:'act1', kind:'act', tag:'[BOOT_SEQUENCE]: FORCED_MEMORY_INJECTION.',
-    text:`Your room shrinks around you as the dark monitor screen begins to pulse with a faint, toxic green luminescence. The cursor doesn't blink normally anymore, it stutters, shivering like a needle caught on a scratched vinyl record.
+    text:`Your room shrinks around you as the dark monitor screen begins to pulse with a faint, toxic green luminescence. The cursor doesn't blink normally anymore — it stutters, shivering like a needle caught on a scratched vinyl record.
 
 You were looking for answers about a missing frequency, a forgotten student, or a ghost in the code. Instead, you've pulled on a thread that wasn't meant to be touched. Lines of raw, uncompiled terminal data scroll down your screen too fast to read, tearing through your system's baseline security.
 
@@ -623,6 +631,15 @@ const els = {
   flash: document.getElementById('flash'),
   hint: document.getElementById('hintText'),
 };
+
+/* Bind unlock directly to the actual buttons the person taps (title's
+   BEGIN_TRANSMISSION, CONTINUE, and REPLAY_LOG all reuse #continue-btn),
+   plus the skip-by-tapping-the-panel interaction. A play() call made
+   synchronously inside a real click/tap handler is the one thing every
+   browser's autoplay policy reliably allows — more reliable than a
+   generic page-wide listener alone. */
+els.cont.addEventListener('click', ensureAudioUnlocked);
+document.getElementById('textpanel').addEventListener('click', ensureAudioUnlocked);
 
 function renderSidebar(currentId){
   els.sectorList.innerHTML = SECTOR_IDS.map(id=>{
@@ -741,7 +758,6 @@ function renderStep(){
     els.vpInner.innerHTML = `
       <div class="titlescreen">
         <div style="font-family:var(--font-disp);font-size:30px;color:var(--green-dim);letter-spacing:4px;">${step.tag}</div>
-        <div class="title-sub">NARRATOR&nbsp;POV</div>
       </div>`;
     triggerGlitch(idx>0?'soft':'hard');
     const full = step.text;
