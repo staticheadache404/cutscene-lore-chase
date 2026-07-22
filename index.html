@@ -476,8 +476,8 @@ document.getElementById('audio-toggle').addEventListener('click', ()=> setAudio(
    (or edit the src paths below) and they'll slot in automatically.
    If a file is missing, a CRT-style "signal lost" placeholder shows instead. */
 function assetImg(n, alt){
-  return `<img id="artAsset${n}" src="art_asset_0${n}.jpg" alt="${alt}" class="asset-img"
-    onerror="this.onerror=null; this.outerHTML='<div class=&quot;img-missing&quot;><div class=&quot;big&quot;>ART_ASSET_0${n}</div><div>SOURCE FILE NOT FOUND</div><div>art_asset_0${n}.jpg</div></div>';" />`;
+  return `<img id="memoryFrame${n}" src="MEMORY_FRAME_0${n}.jpg" alt="${alt}" class="asset-img"
+    onerror="this.onerror=null; this.outerHTML='<div class=&quot;img-missing&quot;><div class=&quot;big&quot;>MEMORY_FRAME_0${n}</div><div>SOURCE FILE NOT FOUND</div><div>MEMORY_FRAME_0${n}.jpg</div></div>';" />`;
 }
 
 /* ============ CONTENT ============ */
@@ -494,19 +494,19 @@ You aren't just reading a log — you are accessing a piece of Chase Miller befo
 
   { id:'s1', kind:'scene', tag:'[SYSTEM_RECOVERY]: MEMORY_SECTOR_01 RESTORED.',
     quote:`"It was supposed to be a simple frequency tuner. A little custom code, a guitar pedal, and a dream of dropping out of comp-sci to actually build something real."`,
-    asset:1, label:'ART_ASSET_01 // 2018_FRAGMENT', tagRight:'SECTOR_01' },
+    asset:1, label:'MEMORY_FRAME_01 // 2018_FRAGMENT', tagRight:'SECTOR_01' },
 
   { id:'s2', kind:'scene', tag:'[CRITICAL_WARNING]: FREQUENCY_BLEED_DETECTED.',
     quote:`"I was scanning local radio bands looking for dead air to isolate the pedal's noise gate. But the forest wasn't broadcasting dead air. It was broadcasting... Him."`,
-    asset:2, label:'ART_ASSET_02 // SIGNAL_BLEED', tagRight:'SECTOR_02' },
+    asset:2, label:'MEMORY_FRAME_02 // SIGNAL_BLEED', tagRight:'SECTOR_02' },
 
   { id:'s3', kind:'scene', tag:'[KERNEL_PANIC]: IDENTITY_SECTOR_OVERWRITTEN.',
     quote:`"At first, I fought it. Tried to patch the breach, tried to rewrite my own mind like a broken script. But you can't debug an anomaly that controls the compiler."`,
-    asset:3, label:'ART_ASSET_03 // MALICIOUS_COMPLIANCE', tagRight:'SECTOR_03' },
+    asset:3, label:'MEMORY_FRAME_03 // MALICIOUS_COMPLIANCE', tagRight:'SECTOR_03' },
 
   { id:'s4', kind:'scene', tag:'[PROXY_PROTOCOL_ACTIVE]: CONNECTION_LOCKED.',
     quote:`"So I stopped fighting. The static in my head makes far more sense than the real world ever did anyway. And now? You're looking at my feed... which means He is looking at yours."`,
-    asset:4, label:'ART_ASSET_04 // DIRECT_CONFRONTATION', tagRight:'SECTOR_04', bigGlitch:true },
+    asset:4, label:'MEMORY_FRAME_04 // DIRECT_CONFRONTATION', tagRight:'SECTOR_04', bigGlitch:true },
 
   { id:'act3', kind:'act', tag:'[SIGNAL_TERMINATED]: PROXY_RELAY_OFFLINE.',
     text:`The smug smirk on Chase's pixelated face dissolves into a cascading waterfall of raw, unreadable hex code. One by one, the wireframe pine trees, the glitched forest geometry, and the flickering crimson glare collapse inward, swallowing themselves into a single, blinding point of light at the center of your monitor.
