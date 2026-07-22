@@ -386,6 +386,9 @@ html,body{
           <span id="meterPct">00%</span>
         </div>
         <button id="audio-toggle" aria-label="Mute audio">🔊</button>
+        <audio id="bgmAudio" loop preload="auto">
+          <source src="Kevin_MacLeod_Night_of_Chaos.mp3" type="audio/mpeg">
+        </audio>
       </div>
     </div>
 
@@ -462,14 +465,20 @@ function setAudio(on){
   const btn = document.getElementById('audio-toggle');
   btn.textContent = on ? '🔊' : '🔇';
   btn.setAttribute('aria-label', on ? 'Mute audio' : 'Unmute audio');
+  const bgm = document.getElementById('bgmAudio');
   if(on){
     initAudio();
     if(actx.state === 'suspended') actx.resume();
     humGain.gain.linearRampToValueAtTime(0.02, actx.currentTime+1.2);
     window.__noiseGain.gain.linearRampToValueAtTime(0.012, actx.currentTime+1.2);
-  } else if(actx){
-    humGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
-    window.__noiseGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
+    bgm.volume = 0.35;
+    bgm.play().catch(()=>{ /* blocked until user gesture — attemptAutoAudio's unlock handles it */ });
+  } else {
+    bgm.pause();
+    if(actx){
+      humGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
+      window.__noiseGain.gain.linearRampToValueAtTime(0.0, actx.currentTime+0.4);
+    }
   }
 }
 /* Browsers block audio until a real user gesture. We try to start
@@ -480,6 +489,8 @@ function attemptAutoAudio(){
   setAudio(true);
   const unlock = ()=>{
     if(actx && actx.state === 'suspended') actx.resume();
+    const bgm = document.getElementById('bgmAudio');
+    if(audioOn && bgm.paused) bgm.play().catch(()=>{});
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);
   };
@@ -504,7 +515,6 @@ function staticPop(){
   window.__noiseGain.gain.setValueAtTime(0.09, actx.currentTime);
   window.__noiseGain.gain.exponentialRampToValueAtTime(0.012, actx.currentTime+0.5);
 }
-document.getElementById('audio-toggle').addEventListener('click', ()=> setAudio(!audioOn));
 
 /* ============ ART ASSETS ============ */
 /* Plain <img> tags — drop your own files in the same folder on GitHub
